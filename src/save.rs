@@ -149,7 +149,7 @@ pub struct Save {
     pub blue: u32,
 }
 
-fn xor_key(bytes: &Vec<u8>) -> Vec<u8> {
+fn xor_key(bytes: &[u8]) -> Vec<u8> {
     let key = b"key";
 
     bytes
@@ -166,9 +166,6 @@ impl Save {
         let decoded = decode(contents)
             .map(|bytes| xor_key(&bytes))
             .map_err(|_e| SaveError::Base64DecodeError)?;
-
-        //
-        //println!("{}", std::str::from_utf8(decoded.as_slice()).unwrap());
 
         // Deserialize the resulting JSON to our custom struct
         serde_json::from_slice(decoded.as_slice()).map_err(|e| SaveError::JSONError {

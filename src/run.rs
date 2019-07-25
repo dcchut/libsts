@@ -8,7 +8,7 @@ pub enum RunError {
     JSONError { error_string: String },
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Run {
     pub ascension_level: u32,
     pub boss_relics: Vec<BossRelicChoice>,

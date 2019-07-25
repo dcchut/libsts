@@ -13,7 +13,7 @@ pub enum SaveError {
     JSONError { error_string: String },
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Save {
     // Game parameters
     pub ascension_level: u32,
@@ -160,6 +160,19 @@ fn xor_key(bytes: &[u8]) -> Vec<u8> {
 }
 
 impl Save {
+    /// Attempts to create an instance of Save using the contents of a savefile.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use libsts::{Save, SaveError};
+    /// use std::fs;
+    ///
+    /// fn main() {
+    ///     let contents = fs::read_to_string("IRONCLAD.autosave").unwrap();
+    ///     let save = Save::new(&contents).unwrap();
+    /// }
+    /// ```
     pub fn new(contents: &str) -> Result<Save, SaveError> {
         // Begin by performing a base64 decode of our input string and xor-ing our input
         // against the key
@@ -173,6 +186,7 @@ impl Save {
         })
     }
 
+    /// Attempts to represent this save file as a byte vector
     pub fn as_bytes(&self) -> Result<Vec<u8>, SaveError> {
         serde_json::to_string(&self)
             .map(|x| x.into_bytes())
@@ -181,6 +195,7 @@ impl Save {
             })
     }
 
+    /// Attempts to represent this save file as a base64 string
     pub fn as_b64(&self) -> Result<String, SaveError> {
         let bytes = self.as_bytes().map(|b| xor_key(&b))?;
 

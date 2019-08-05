@@ -4,7 +4,7 @@ use failure_derive::Fail;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Fail, Debug)]
+#[derive(Clone, Debug, Fail)]
 pub enum SaveError {
     #[fail(display = "Base64 decoding failed.")]
     Base64DecodeError,
@@ -13,7 +13,7 @@ pub enum SaveError {
     JSONError { error_string: String },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Save {
     // Game parameters
     pub ascension_level: u32,

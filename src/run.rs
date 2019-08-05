@@ -2,13 +2,13 @@ use crate::common::*;
 use failure_derive::Fail;
 use serde::{Deserialize, Serialize};
 
-#[derive(Fail, Debug)]
+#[derive(Clone, Debug, Fail)]
 pub enum RunError {
     #[fail(display = "JSON error: {}", error_string)]
     JSONError { error_string: String },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Run {
     pub ascension_level: u32,
     pub boss_relics: Vec<BossRelicChoice>,

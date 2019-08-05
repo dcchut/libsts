@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct Card {
     pub id: String,
     pub misc: u32,
     pub upgrades: u32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DamageTaken {
     pub damage: f64,
     pub enemies: String,
@@ -15,20 +15,20 @@ pub struct DamageTaken {
     pub turns: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CardChoice {
     pub floor: f64,
     pub not_picked: Vec<String>,
     pub picked: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct BossRelicChoice {
     pub picked: Option<String>,
     pub not_picked: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EventChoice {
     pub cards_upgraded: Option<Vec<String>>,
     pub cards_obtained: Option<Vec<String>>,
@@ -44,7 +44,7 @@ pub struct EventChoice {
     pub player_choice: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct FloorKey {
     pub floor: f64,
     pub key: String,

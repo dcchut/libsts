@@ -4,11 +4,8 @@ use failure_derive::Fail;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Clone, Debug, Fail)]
+#[derive(Clone, Debug, Fail, PartialEq, Eq)]
 pub enum SaveError {
-    #[fail(display = "Base64 decoding failed.")]
-    Base64DecodeError,
-
     #[fail(display = "JSON error: {}", error_string)]
     JSONError { error_string: String },
 }
@@ -168,36 +165,45 @@ impl Save {
     /// use libsts::{Save, SaveError};
     /// use std::fs;
     ///
-    /// fn main() {
-    ///     let contents = fs::read_to_string("IRONCLAD.autosave").unwrap();
-    ///     let save = Save::new(&contents).unwrap();
-    /// }
+    ///
+    /// let contents = fs::read_to_string("IRONCLAD.autosave").unwrap();
+    /// let save = Save::new(&contents).unwrap();
     /// ```
     pub fn new(contents: &str) -> Result<Save, SaveError> {
-        // Begin by performing a base64 decode of our input string and xor-ing our input
-        // against the key
-        let decoded = decode(contents)
-            .map(|bytes| xor_key(&bytes))
-            .map_err(|_e| SaveError::Base64DecodeError)?;
+        // Attempt to perform a base64 decode of the input string, xor-ing the input against our key
+        let decoded = decode(contents).map(|bytes| xor_key(&bytes));
+
+        let bytes = match decoded {
+            Ok(decoded) => decoded,
+            Err(_) => {
+                // If that fails, attempt to decode directly
+                Vec::from(contents)
+            }
+        };
 
         // Deserialize the resulting JSON to our custom struct
-        serde_json::from_slice(decoded.as_slice()).map_err(|e| SaveError::JSONError {
+        serde_json::from_slice(bytes.as_slice()).map_err(|e| SaveError::JSONError {
             error_string: e.to_string(),
         })
     }
 
     /// Attempts to represent this save file as a byte vector
-    pub fn as_bytes(&self) -> Result<Vec<u8>, SaveError> {
-        serde_json::to_string(&self)
-            .map(|x| x.into_bytes())
-            .map_err(|e| SaveError::JSONError {
-                error_string: e.to_string(),
-            })
+    pub fn to_bytes(&self) -> Result<Vec<u8>, SaveError> {
+        serde_json::to_vec(self).map_err(|e| SaveError::JSONError {
+            error_string: e.to_string(),
+        })
+    }
+
+    /// Attempts to represent this save file as a string
+    pub fn to_string(&self) -> Result<String, SaveError> {
+        serde_json::to_string(self).map_err(|e| SaveError::JSONError {
+            error_string: e.to_string(),
+        })
     }
 
     /// Attempts to represent this save file as a base64 string
-    pub fn as_b64(&self) -> Result<String, SaveError> {
-        let bytes = self.as_bytes().map(|b| xor_key(&b))?;
+    pub fn to_b64_string(&self) -> Result<String, SaveError> {
+        let bytes = self.to_bytes().map(|b| xor_key(&b))?;
 
         Ok(encode(std::str::from_utf8(&bytes).unwrap()))
     }

@@ -13,7 +13,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-libsts = "0.2.0"
+libsts = "0.3"
 ```
 
 ## Basic Usage
@@ -33,14 +33,24 @@ fn main() {
         save.gold += 999;
         
         // Get the base64 string representation of our modified savefile
-        if let Ok(modified_save) = save.as_b64() {
+        if let Ok(modified_save) = save.to_b64_string() {
             // Attempt to overwrite the current save file
             // with our modified cheaty save file
-            fs::write("IRONCLAD.autosave", modified_save);
+            fs::write("IRONCLAD.autosave", modified_save); 
+        }
+        
+        // Or if you're using the BETA branch of STS:
+        if let Ok(modified_save) = save.to_string() {
+            // ...
+            fs::write("IRONCLAD.autosaveBETA", modified_save);
         }
     }
 }
 ```
-## License
-
-This project is licensed under the Apache License, Version 2.0.
+### License
+Licensed under either of
+ * Apache License, Version 2.0
+   ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license
+   ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+at your option.

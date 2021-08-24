@@ -1,8 +1,10 @@
 use crate::common::*;
+use base64::read::DecoderReader;
 use base64::{decode, encode};
 use failure_derive::Fail;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::io::Read;
 
 #[derive(Clone, Debug, Fail, PartialEq, Eq)]
 pub enum SaveError {
@@ -146,13 +148,13 @@ pub struct Save {
     pub blue: u32,
 }
 
-fn xor_key(bytes: &[u8]) -> Vec<u8> {
-    let key = b"key";
+const KEY: &[u8; 3] = b"key";
 
+fn xor_key(bytes: &[u8]) -> Vec<u8> {
     bytes
         .iter()
         .enumerate()
-        .map(|(i, v)| *v ^ key[i % key.len()])
+        .map(|(i, v)| *v ^ KEY[i % KEY.len()])
         .collect()
 }
 
@@ -187,6 +189,33 @@ impl Save {
         })
     }
 
+    /// Reads savefile from given reader.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use libsts::Save;
+    /// use std::fs::File;
+    ///
+    ///
+    /// let file = File::open("IRONCLAD.autosave").unwrap();
+    /// let save = Save::from_reader(file).unwrap();
+    /// ```
+    pub fn from_reader<R>(mut reader: R) -> Result<Save, SaveError>
+    where
+        R: Read,
+    {
+        match serde_json::from_reader(KeyXORReader::new(DecoderReader::new(
+            &mut reader,
+            base64::STANDARD,
+        ))) {
+            Ok(s) => s,
+            Err(_) => serde_json::from_reader(reader).map_err(|e| SaveError::JSONError {
+                error_string: e.to_string(),
+            }),
+        }
+    }
+
     /// Attempts to represent this save file as a byte vector
     pub fn to_bytes(&self) -> Result<Vec<u8>, SaveError> {
         serde_json::to_vec(self).map_err(|e| SaveError::JSONError {
@@ -206,5 +235,63 @@ impl Save {
         let bytes = self.to_bytes().map(|b| xor_key(&b))?;
 
         Ok(encode(std::str::from_utf8(&bytes).unwrap()))
+    }
+}
+
+#[derive(Debug)]
+struct KeyXORReader<R> {
+    inner: R,
+    pos: usize,
+}
+
+impl<R> KeyXORReader<R> {
+    fn new(inner: R) -> KeyXORReader<R>
+    where
+        R: Read,
+    {
+        KeyXORReader { inner, pos: 0 }
+    }
+}
+
+impl<R> Read for KeyXORReader<R>
+where
+    R: Read,
+{
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        self.inner.read(buf).map(|n| {
+            for i in 0..n {
+                buf[i] ^= KEY[(self.pos + i) % KEY.len()]
+            }
+            self.pos += n;
+            n
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn key_xor_reader() {
+        let mut result: Vec<u8> = Vec::new();
+        let mut input: Vec<u8> = Vec::new();
+        KeyXORReader::new(&input[..])
+            .read_to_end(&mut result)
+            .unwrap();
+        assert!(result.is_empty());
+
+        input = vec![0];
+        KeyXORReader::new(&input[..])
+            .read_to_end(&mut result)
+            .unwrap();
+        assert_eq!(result, &[b'k']);
+
+        result.clear();
+        input = vec![b'k', b'e', b'y', b'k'];
+        KeyXORReader::new(&input[..])
+            .read_to_end(&mut result)
+            .unwrap();
+        assert_eq!(result, &[0, 0, 0, 0])
     }
 }
